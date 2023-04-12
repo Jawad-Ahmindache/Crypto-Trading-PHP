@@ -1,1 +1,2 @@
 # Crypto-Trading-PHP
+Arbitrage bot in PHP the goal is simple, take the price of all crypto exchange of several pair of crypto currency, compare them between it to see which one is the cheapest and be able to make exchange on the exchange where this same pair is the most expensive
