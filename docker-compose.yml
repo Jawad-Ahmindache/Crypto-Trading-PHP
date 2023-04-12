@@ -1,0 +1,67 @@
+version: "1.0"  # optional since v1.27.0
+services:
+    web:
+        image: nginx:latest
+        restart: unless-stopped
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./volumes/html/:/var/www/html # Charger le code source
+            - ./volumes/files/:/var/www/html/volume/ # Stockage des fichiers des clients
+            - ./volumes/config/nginx/default.conf:/etc/nginx/conf.d/default.conf # Configuration NGINX
+            - ./volumes/log/nginx/:/var/log/nginx/ #Log nginx
+            - ./volumes/config/ssl/:/etc/ssl_cert #certificat ssl
+        depends_on:
+            - php
+  
+    mariadb:
+        image: mariadb:latest
+        restart: unless-stopped
+        environment:
+            - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASS}
+            - MARIADB_ROOT_PASSWORD=${MYSQL_ROOT_PASS}
+        volumes:
+            - ./volumes/database/:/var/lib/mysql # Liste toute nos base de donnée
+            - ./volumes/config/sql/mariadb.cnf:/etc/mysql/mariadb.cnf # mariadb.cnf
+            - ./volumes/config/sql/50-server.cnf:/etc/mysql/mariadb.conf.d/50-server.cnf # 50-server.cnf
+            - ./volumes/config/ssl/:/etc/ssl_cert #certificat ssl
+
+
+        ports:
+          - "3306:3306"
+               
+    php:
+        image: jahmindache/php-botjz
+        restart: unless-stopped
+        environment:
+            - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASS}
+        ports:
+            - "9000:9000"
+   
+        tty: true
+        volumes:
+            - ./volumes/html/:/var/www/html # Charger le code source
+            - ./volumes/html/log/:/var/html/log/ #Log nginx
+            - ./volumes/files/:/var/www/html/volume/ # Stockage des fichiers des clients
+            - ./volumes/config/php/php.ini:/usr/local/etc/php/php.ini #php.ini
+            - ./volumes/config/ssl/:/etc/ssl_cert #certificat ssl
+        depends_on:
+            - mariadb
+
+
+    # phpMyAdmin Service
+    phpmyadmin:
+        image: jahmindache/phpmyadminssl
+        volumes:
+            - ./volumes/config/ssl/:/etc/ssl_cert #certificat ssl
+            - ./volumes/config/phpmyadmin/000default.conf:/etc/apache2/sites-available/000-default.conf #conf apache phpmyadmin
+            - ./volumes/config/php/php.ini:/usr/local/etc/php/php.ini #php.ini
+        ports:
+            - 8080:80
+            - 8443:443
+        environment:
+            PMA_HOST: mariadb
+            UPLOAD_LIMIT: 2048M
+        depends_on:
+            - mariadb
